@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# Copyright © kakkarja (K A K)
+
 from tkinter import Tk, ttk, simpledialog, messagebox
 import tkinter as tk
 from Clien.clien import cmsk, insdat
