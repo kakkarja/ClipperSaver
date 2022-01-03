@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
-# Copyright © kakkarja (K A K)
+# Copyright (c) 2022, KarjaKAK
+# All rights reserved.
 
 from tkinter import Tk, ttk, simpledialog, messagebox
 import tkinter as tk
-from Clien.clien import cmsk, insdat
+from Clien.clien import cmsk
 from contextlib import redirect_stdout
 from DecAn.decan import deconstruct, construct
 from datetime import datetime
 from .dbase import Ziper
+from ast import literal_eval
 import sys, os, io
 import subprocess
 import ctypes
 import ctypes.wintypes as w
-from ast import literal_eval
 
 # Ref from: https://stackoverflow.com/questions/
 # 46132401/read-text-from-clipboard-in-windows-using-ctypes
@@ -67,6 +68,13 @@ class Clipper:
             if self.upt:
                 self.sel.append(self.upt[0])
 
+    def topm(self):
+        match self.root.wm_attributes('-topmost'):
+            case 1:
+                self.root.attributes('-topmost', 0)
+            case _:
+                self.root.attributes('-topmost', 1)
+
     def copasw(self) -> str:
 
         CF_UNICODETEXT = 13
@@ -91,7 +99,7 @@ class Clipper:
         CloseClipboard.argtypes = None
         CloseClipboard.restype = w.BOOL
 
-        text = ""
+        text = ''
         if OpenClipboard(None):
             if h_clip_mem := GetClipboardData(CF_UNICODETEXT):
                 text = ctypes.wstring_at(GlobalLock(h_clip_mem))
@@ -115,8 +123,8 @@ class Clipper:
     def pbcopas(self) -> str:
 
         if sys.platform.startswith("win"):
-            if gt := self.copasw():
-                return gt
+            gt = self.copasw()
+            return gt
         else:
             with subprocess.Popen(
                 "pbpaste",
@@ -130,12 +138,9 @@ class Clipper:
             return gt
 
     def clipon(self):
-        if self.root.focus_get() == None:
-            self.root.focus_force()
         clip = self.pbcopas()
-
         match clip:
-            case "":
+            case '':
                 self.aft = self.root.after(500, self.clipon)
             case _:
                 self.ls.insert(self.ls.winfo_cells() + 1, clip)
@@ -161,7 +166,7 @@ class Clipper:
         take = None
         if self.lock is None:
             self.lock = 1
-
+            self.topm()
             class MyDialog(simpledialog.Dialog):
                 def body(self, master):
                     tk.Label(master, text="Pass: ").grid(row=0, column=0, sticky=tk.E)
@@ -183,6 +188,7 @@ class Clipper:
 
             d = MyDialog(self.root)
             self.lock = None
+            self.topm()
             if d.result:
                 take = "".join(data) if isinstance(data, list) else data
                 v = io.StringIO()
@@ -239,6 +245,7 @@ class Clipper:
         fl = [i for i in os.listdir(self.fold()) if ".7z" in i]
         if fl and self.lock is None:
             self.lock = 1
+            self.topm()
 
             class Mdialog(simpledialog.Dialog):
                 def body(self, master) -> None:
@@ -258,6 +265,7 @@ class Clipper:
 
             d = Mdialog(self.root)
             self.lock = None
+            self.topm()
             if d.result:
                 return d.result
 
