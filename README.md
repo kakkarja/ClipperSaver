@@ -39,6 +39,7 @@ clippers
 - Suitable for keeping data save with password.
 - Easily useful to set in Environment Variable which data is encrypted.
     - These will be useful for developer.
+- Add deleting selected cells with keyboard shortcut **"Control+d"**.
 ## Visit for usage Reference
 - https://pypi.org/project/Clien-karjakak/
 - https://pypi.org/project/DecAn-karjakak/

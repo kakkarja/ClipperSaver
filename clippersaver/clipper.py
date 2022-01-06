@@ -32,26 +32,48 @@ class Clipper:
         self.sel = []
         self.lock = None
 
-        self.ls = tk.Listbox(root, selectmode="multiple")
-        self.ls.pack(pady=2, padx=2, expand=1, fill="both")
+        self.fr1 = tk.Frame(self.root, pady=2, padx=2)
+        self.fr1.pack(side='left', fill='both', expand=1)
+        
+        self.ls = tk.Listbox(self.fr1, selectmode="multiple")
+        self.ls.pack(side='left', pady=2, padx=2, expand=1, fill="both")
         self.ls.bind("<ButtonRelease>", self.updatesel)
+        self.ls.bind("<Control-d>", self.clear)
 
-        self.bto = ttk.Button(root, text="Start clipping!", command=self.clipon)
+        self.scr = tk.Scrollbar(self.fr1, orient='vertical')
+        self.scr.pack(side='right', fill='y')
+        self.scr.config(command=self.ls.yview)
+        self.ls.config(yscrollcommand=self.scr.set)
+
+        self.fr2 = tk.Frame(self.root)
+        self.fr2.pack(side='right', fill='both', expand=1)
+        
+        self.bto = ttk.Button(self.fr2, text="Start clipping!", command=self.clipon)
         self.bto.pack(pady=1, padx=2, expand=1, fill="both")
 
-        self.bts = ttk.Button(root, text="Stop clipping!", command=self.stc)
+        self.bts = ttk.Button(self.fr2, text="Stop clipping!", command=self.stc)
         self.bts.pack(pady=1, padx=2, expand=1, fill="both")
 
-        self.btp = ttk.Button(root, text="Structure", command=self.struc)
+        self.btp = ttk.Button(self.fr2, text="Structure", command=self.struc)
         self.btp.pack(pady=1, padx=2, expand=1, fill="both")
 
-        self.btr = ttk.Button(root, text="Read Construct", command=self.readec)
+        self.btr = ttk.Button(self.fr2, text="Read Construct", command=self.readec)
         self.btr.pack(pady=1, padx=2, expand=1, fill="both")
 
-        self.btsr = ttk.Button(root, text="Set Construct", command=self.setdec)
+        self.btsr = ttk.Button(self.fr2, text="Set Construct", command=self.setdec)
         self.btsr.pack(pady=1, padx=2, expand=1, fill="both")
 
         self.clipon()
+
+    def clear(self, event=None):
+        if self.ls.curselection():
+            m = 0
+            sem = None
+            for d in iter(self.ls.curselection()):
+                sem = d - m
+                self.ls.delete(sem, sem)
+                m += 1
+            del m, sem
 
     def updatesel(self, event=None):
         if self.upt:
@@ -121,7 +143,6 @@ class Clipper:
         return text
 
     def pbcopas(self) -> str:
-
         if sys.platform.startswith("win"):
             gt = self.copasw()
             return gt
