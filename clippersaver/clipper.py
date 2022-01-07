@@ -33,21 +33,21 @@ class Clipper:
         self.lock = None
 
         self.fr1 = tk.Frame(self.root, pady=2, padx=2)
-        self.fr1.pack(side='left', fill='both', expand=1)
-        
+        self.fr1.pack(side="left", fill="both", expand=1)
+
         self.ls = tk.Listbox(self.fr1, selectmode="multiple")
-        self.ls.pack(side='left', pady=2, padx=2, expand=1, fill="both")
+        self.ls.pack(side="left", pady=2, padx=2, expand=1, fill="both")
         self.ls.bind("<ButtonRelease>", self.updatesel)
         self.ls.bind("<Control-d>", self.clear)
 
-        self.scr = tk.Scrollbar(self.fr1, orient='vertical')
-        self.scr.pack(side='right', fill='y')
+        self.scr = tk.Scrollbar(self.fr1, orient="vertical")
+        self.scr.pack(side="right", fill="y")
         self.scr.config(command=self.ls.yview)
         self.ls.config(yscrollcommand=self.scr.set)
 
         self.fr2 = tk.Frame(self.root)
-        self.fr2.pack(side='right', fill='both', expand=1)
-        
+        self.fr2.pack(side="right", fill="both", expand=1)
+
         self.bto = ttk.Button(self.fr2, text="Start clipping!", command=self.clipon)
         self.bto.pack(pady=1, padx=2, expand=1, fill="both")
 
@@ -91,11 +91,11 @@ class Clipper:
                 self.sel.append(self.upt[0])
 
     def topm(self):
-        match self.root.wm_attributes('-topmost'):
+        match self.root.wm_attributes("-topmost"):
             case 1:
-                self.root.attributes('-topmost', 0)
+                self.root.attributes("-topmost", 0)
             case _:
-                self.root.attributes('-topmost', 1)
+                self.root.attributes("-topmost", 1)
 
     def copasw(self) -> str:
 
@@ -121,7 +121,7 @@ class Clipper:
         CloseClipboard.argtypes = None
         CloseClipboard.restype = w.BOOL
 
-        text = ''
+        text = ""
         if OpenClipboard(None):
             if h_clip_mem := GetClipboardData(CF_UNICODETEXT):
                 text = ctypes.wstring_at(GlobalLock(h_clip_mem))
@@ -161,7 +161,7 @@ class Clipper:
     def clipon(self):
         clip = self.pbcopas()
         match clip:
-            case '':
+            case "":
                 self.aft = self.root.after(500, self.clipon)
             case _:
                 self.ls.insert(self.ls.winfo_cells() + 1, clip)
@@ -182,17 +182,20 @@ class Clipper:
             os.mkdir(fl)
         return fl
 
-    def sett(self, data: str | list):
+    def sett(self, data: str | list, psd: str = None):
         v = None
         take = None
         if self.lock is None:
             self.lock = 1
             self.topm()
+
             class MyDialog(simpledialog.Dialog):
                 def body(self, master):
                     tk.Label(master, text="Pass: ").grid(row=0, column=0, sticky=tk.E)
                     self.e1 = tk.Entry(master, show="-")
                     self.e1.grid(row=0, column=1)
+                    if psd:
+                        self.e1.insert(0, psd)
                     tk.Label(master, text="Var: ").grid(row=1, column=0, sticky=tk.E)
                     self.e2 = tk.Entry(master)
                     self.e2.grid(row=1, column=1)
@@ -304,7 +307,7 @@ class Clipper:
                     os.remove(jn)
                     del con
                 except Exception as e:
-                    messagebox.showerror('Clippers', e)
+                    messagebox.showerror("Clippers", e)
             del fld, fln, jn, pssd, take
 
     def setdec(self):
@@ -316,11 +319,11 @@ class Clipper:
                 jn = os.path.join(self.fold(), take)
                 self.zipex(take, psd, False)
                 con = literal_eval(construct(jn))
-                self.sett(con)
+                self.sett(con, psd)
                 os.remove(jn)
                 del jn, con
             except Exception as e:
-                messagebox.showerror('Clippers', e)
+                messagebox.showerror("Clippers", e)
         del take, psd
 
 
