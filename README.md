@@ -32,6 +32,10 @@ clippers
 
 - Setting an Environment Variable from a selected deconstructed file.
 
+**Delete Archive**
+
+- Delete a deconstruct file that has been archived.
+
 ## Take Note:
 - Useful for copying long password, data for api, etc.
 - ClipperSaver will collect the copied data and automatically fill every cells with the copied data.

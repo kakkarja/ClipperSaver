@@ -63,6 +63,9 @@ class Clipper:
         self.btsr = ttk.Button(self.fr2, text="Set Construct", command=self.setdec)
         self.btsr.pack(pady=1, padx=2, expand=1, fill="both")
 
+        self.btd = ttk.Button(self.fr2, text="Delete Archive", command=self.deldec)
+        self.btd.pack(pady=1, padx=2, expand=1, fill="both")
+
         self.clipon()
 
     def clear(self, event=None):
@@ -325,6 +328,16 @@ class Clipper:
             except Exception as e:
                 messagebox.showerror("Clippers", e)
         del take, psd
+
+    def deldec(self):
+        if gt := self.chfl():
+            if os.path.exists(pth := os.path.join(self.fold(), gt)):
+                os.remove(pth)
+                messagebox.showinfo("Clippers", f"{gt} has been deleted!")
+            del pth
+        else:
+            messagebox.showinfo("Clippers", "Deletion is aborted!")
+        del gt
 
 
 def main():
