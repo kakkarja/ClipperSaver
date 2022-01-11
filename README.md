@@ -36,6 +36,12 @@ clippers
 
 - Delete a deconstruct file that has been archived.
 
+**Clear Environment Variable**
+
+- Delete created variable from ClipperSaver
+- **WARNING**:
+    - **Do not delete** the <em>**variable**</em> that is **not created in ClipperSaver**
+
 ## Take Note:
 - Useful for copying long password, data for api, etc.
 - ClipperSaver will collect the copied data and automatically fill every cells with the copied data.

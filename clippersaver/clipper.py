@@ -10,6 +10,7 @@ from DecAn.decan import deconstruct, construct
 from datetime import datetime
 from .dbase import Ziper
 from ast import literal_eval
+from envarclear import Cleaner
 import sys, os, io
 import subprocess
 import ctypes
@@ -65,6 +66,9 @@ class Clipper:
 
         self.btd = ttk.Button(self.fr2, text="Delete Archive", command=self.deldec)
         self.btd.pack(pady=1, padx=2, expand=1, fill="both")
+
+        self.btc = ttk.Button(self.fr2, text="Clean Variable", command=self.clenvar)
+        self.btc.pack(pady=1, padx=2, expand=1, fill="both")
 
         self.clipon()
 
@@ -338,6 +342,16 @@ class Clipper:
         else:
             messagebox.showinfo("Clippers", "Deletion is aborted!")
         del gt
+
+    def clenvar(self):
+        en = simpledialog.askstring("Clippers", "Variable name:", parent=self.root)
+        if en:
+            cl = Cleaner()
+            if sys.platform.startswith("win"):
+                cl.wind(en)
+            else:
+                cl.macs(en, ".zprofile")
+            del cl
 
 
 def main():
