@@ -39,8 +39,6 @@ clippers
 **Clear Environment Variable**
 
 - Delete created variable from ClipperSaver
-- **WARNING**:
-    - **Do not delete** the <em>**variable**</em> that is **not created in ClipperSaver**
 
 ## Take Note:
 - Useful for copying long password, data for api, etc.

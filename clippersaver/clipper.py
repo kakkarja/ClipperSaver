@@ -4,6 +4,7 @@
 
 from tkinter import Tk, ttk, simpledialog, messagebox
 import tkinter as tk
+from typing import Literal
 from Clien.clien import cmsk
 from contextlib import redirect_stdout
 from DecAn.decan import deconstruct, construct
@@ -11,6 +12,7 @@ from datetime import datetime
 from .dbase import Ziper
 from ast import literal_eval
 from envarclear import Cleaner
+from pathlib import Path
 import sys, os, io
 import subprocess
 import ctypes
@@ -189,6 +191,53 @@ class Clipper:
             os.mkdir(fl)
         return fl
 
+    def varsave(self, nvar: str, st: bool = True):
+        pick = Path(os.path.join(self.fold(), f'clipvars.json'))
+        pth = os.path.join(pick.parent, f'clipvars')
+        lvar = [f"{nvar}"]
+        co =  None
+
+        match st:
+            case True:
+                if not os.path.exists(pth):
+                    deconstruct(f'{lvar}', pick.name, pick.parent)
+                    os.rename(pick, pth)
+                else:
+                    os.rename(pth, pick)
+                    co = construct(str(pick))
+                    co = literal_eval(co)
+                    lvar = lvar + co if not lvar[0] in co else co
+                    deconstruct(f'{lvar}', pick.name, pick.parent)
+                    os.rename(pick, pth)
+            case False:
+                if os.path.exists(pth):
+                    os.rename(pth, pick)
+                    co = construct(str(pick))
+                    co = literal_eval(co)
+                    co.pop(co.index(nvar))
+                    deconstruct(f'{co}', pick.name, pick.parent)
+                    os.rename(pick, pth)
+                    if not co:
+                        os.remove(pth)
+
+        del pick, pth, lvar, co
+
+    def rdvars(self) -> list | None:
+        pick = Path(os.path.join(self.fold(), f'clipvars.json'))
+        pth = os.path.join(pick.parent, f'clipvars')
+        co = None
+        
+        if os.path.exists(pth):
+            os.rename(pth, pick)
+            co = construct(str(pick))
+            os.rename(pick, pth)
+        del pick, pth
+        
+        if co:
+            return literal_eval(co)
+        else:
+            return co
+
     def sett(self, data: str | list, psd: str = None):
         v = None
         take = None
@@ -225,6 +274,7 @@ class Clipper:
                 v = io.StringIO()
                 with redirect_stdout(v):
                     cmsk(take, d.result[0], d.result[1])
+                self.varsave(d.result[1])
                 messagebox.showinfo("Clippers", f"{v.getvalue()[:-1]}")
                 v.flush()
         del v, take
@@ -344,14 +394,39 @@ class Clipper:
         del gt
 
     def clenvar(self):
-        en = simpledialog.askstring("Clippers", "Variable name:", parent=self.root)
-        if en:
-            cl = Cleaner()
-            if sys.platform.startswith("win"):
-                cl.wind(en)
-            else:
-                cl.macs(en, ".zprofile")
-            del cl
+        fl = self.rdvars()
+        if fl and self.lock is None:
+            self.lock = 1
+            self.topm()
+
+            class Mdialog(simpledialog.Dialog):
+                def body(self, master) -> None:
+                    self.e1 = tk.Listbox(master, selectmode="browse")
+                    for i in fl:
+                        self.e1.insert(self.e1.winfo_cells() + 1, i)
+                    self.e1.pack(side="left", expand=1, fill="both")
+                    self.e2 = tk.Scrollbar(master, orient="vertical")
+                    self.e2.pack(side="right", fill="y")
+                    self.e2.config(command=self.e1.yview)
+                    self.e1.config(yscrollcommand=self.e2.set)
+                    return self.e1
+
+                def apply(self):
+                    if self.e1.curselection():
+                        self.result = fl[int(self.e1.curselection()[0])]
+
+            d = Mdialog(self.root)
+            self.lock = None
+            self.topm()
+            if d.result:
+                cl = Cleaner()
+                if sys.platform.startswith("win"):
+                    cl.wind(d.result)
+                else:
+                    cl.macs(d.result, ".zprofile")
+                del cl
+                self.varsave(d.result, False)
+                messagebox.showinfo('Clippers', f'Variable {d.result} has been deleted!')
 
 
 def main():
