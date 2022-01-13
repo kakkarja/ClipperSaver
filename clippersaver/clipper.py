@@ -4,7 +4,6 @@
 
 from tkinter import Tk, ttk, simpledialog, messagebox
 import tkinter as tk
-from typing import Literal
 from Clien.clien import cmsk
 from contextlib import redirect_stdout
 from DecAn.decan import deconstruct, construct
@@ -192,22 +191,22 @@ class Clipper:
         return fl
 
     def varsave(self, nvar: str, st: bool = True):
-        pick = Path(os.path.join(self.fold(), f'clipvars.json'))
-        pth = os.path.join(pick.parent, f'clipvars')
+        pick = Path(os.path.join(self.fold(), f"clipvars.json"))
+        pth = os.path.join(pick.parent, f"clipvars")
         lvar = [f"{nvar}"]
-        co =  None
+        co = None
 
         match st:
             case True:
                 if not os.path.exists(pth):
-                    deconstruct(f'{lvar}', pick.name, pick.parent)
+                    deconstruct(f"{lvar}", pick.name, pick.parent)
                     os.rename(pick, pth)
                 else:
                     os.rename(pth, pick)
                     co = construct(str(pick))
                     co = literal_eval(co)
                     lvar = lvar + co if not lvar[0] in co else co
-                    deconstruct(f'{lvar}', pick.name, pick.parent)
+                    deconstruct(f"{lvar}", pick.name, pick.parent)
                     os.rename(pick, pth)
             case False:
                 if os.path.exists(pth):
@@ -215,24 +214,25 @@ class Clipper:
                     co = construct(str(pick))
                     co = literal_eval(co)
                     co.pop(co.index(nvar))
-                    deconstruct(f'{co}', pick.name, pick.parent)
-                    os.rename(pick, pth)
-                    if not co:
-                        os.remove(pth)
+                    if co:
+                        deconstruct(f"{co}", pick.name, pick.parent)
+                        os.rename(pick, pth)
+                    else:
+                        os.remove(pick)
 
         del pick, pth, lvar, co
 
     def rdvars(self) -> list | None:
-        pick = Path(os.path.join(self.fold(), f'clipvars.json'))
-        pth = os.path.join(pick.parent, f'clipvars')
+        pick = Path(os.path.join(self.fold(), f"clipvars.json"))
+        pth = os.path.join(pick.parent, f"clipvars")
         co = None
-        
+
         if os.path.exists(pth):
             os.rename(pth, pick)
             co = construct(str(pick))
             os.rename(pick, pth)
         del pick, pth
-        
+
         if co:
             return literal_eval(co)
         else:
@@ -308,7 +308,11 @@ class Clipper:
             if ask:
                 self.sett(coll)
             else:
-                fname = f'{str(datetime.timestamp(datetime.today())).replace(".", "_")}.json'
+                match (fname := simpledialog.askstring("Clippers", "File name:")):
+                    case fname if fname in ["", None]:
+                        fname = f'{str(datetime.timestamp(datetime.today())).replace(".", "_")}.json'
+                    case _:
+                        fname = f"{fname}.json"
                 if pssd := self.gpss():
                     deconstruct(f"{coll}", fname, self.fold())
                     self.zipex(name=fname, pssd=pssd)
@@ -322,8 +326,8 @@ class Clipper:
             self.upt = tuple()
         del coll
 
-    def chfl(self):
-        fl = [i for i in os.listdir(self.fold()) if ".7z" in i]
+    def chfl(self, group: list):
+        fl = group
         if fl and self.lock is None:
             self.lock = 1
             self.topm()
@@ -350,8 +354,14 @@ class Clipper:
             if d.result:
                 return d.result
 
+    def _retl(self, z: bool = True):
+        if z:
+            return [i for i in os.listdir(self.fold()) if ".7z" in i]
+        else:
+            return self.rdvars()
+
     def readec(self):
-        if take := self.chfl():
+        if take := self.chfl(self._retl()):
             fld = self.fold()
             fln = take.rpartition(".")[0] + ".json"
             jn = os.path.join(fld, fln)
@@ -368,8 +378,8 @@ class Clipper:
             del fld, fln, jn, pssd, take
 
     def setdec(self):
-        take = self.chfl()
-        psd = self.gpss()
+        take = self.chfl(self._retl())
+        psd = self.gpss() if take else None
         if take and psd:
             try:
                 take = take.rpartition(".")[0] + ".json"
@@ -384,49 +394,37 @@ class Clipper:
         del take, psd
 
     def deldec(self):
-        if gt := self.chfl():
+        if gt := self.chfl(self._retl()):
             if os.path.exists(pth := os.path.join(self.fold(), gt)):
                 os.remove(pth)
                 messagebox.showinfo("Clippers", f"{gt} has been deleted!")
             del pth
-        else:
-            messagebox.showinfo("Clippers", "Deletion is aborted!")
         del gt
 
+    def ckpro(self):
+        pth = [i for i in os.listdir(os.environ["HOME"]) if ".z" in i]
+        if pth:
+            for fi in pth:
+                if any(fi in ck for ck in [".zprofile", ".zshrc", ".zshenv"]):
+                    return True
+            else:
+                return False
+        else:
+            return False
+
     def clenvar(self):
-        fl = self.rdvars()
-        if fl and self.lock is None:
-            self.lock = 1
-            self.topm()
-
-            class Mdialog(simpledialog.Dialog):
-                def body(self, master) -> None:
-                    self.e1 = tk.Listbox(master, selectmode="browse")
-                    for i in fl:
-                        self.e1.insert(self.e1.winfo_cells() + 1, i)
-                    self.e1.pack(side="left", expand=1, fill="both")
-                    self.e2 = tk.Scrollbar(master, orient="vertical")
-                    self.e2.pack(side="right", fill="y")
-                    self.e2.config(command=self.e1.yview)
-                    self.e1.config(yscrollcommand=self.e2.set)
-                    return self.e1
-
-                def apply(self):
-                    if self.e1.curselection():
-                        self.result = fl[int(self.e1.curselection()[0])]
-
-            d = Mdialog(self.root)
-            self.lock = None
-            self.topm()
-            if d.result:
-                cl = Cleaner()
-                if sys.platform.startswith("win"):
-                    cl.wind(d.result)
-                else:
-                    cl.macs(d.result, ".zprofile")
-                del cl
-                self.varsave(d.result, False)
-                messagebox.showinfo('Clippers', f'Variable {d.result} has been deleted!')
+        if result := self.chfl(self._retl(z=False)):
+            cl = Cleaner()
+            if sys.platform.startswith("win"):
+                cl.wind(result)
+            else:
+                fname = ".zprofile" if self.ckpro() else ".bash_profile"
+                cl.macs(result, fname)
+                del fname
+            del cl
+            self.varsave(result, False)
+            messagebox.showinfo("Clippers", f"Variable {result} has been deleted!")
+        del result
 
 
 def main():
