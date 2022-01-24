@@ -3,7 +3,6 @@
 # All rights reserved.
 
 from tkinter import Tk, ttk, simpledialog, messagebox
-import tkinter as tk
 from Clien.clien import cmsk
 from contextlib import redirect_stdout
 from DecAn.decan import deconstruct, construct
@@ -12,10 +11,17 @@ from .dbase import Ziper
 from ast import literal_eval
 from envarclear import Cleaner
 from pathlib import Path
+from filepmon.pgf import FilePermission as fpm
+from filfla.ffl import FilFla as ff
+from filatt.filatt import WinAtt, AttSet
+from functools import wraps
+from typing import Any
+import tkinter as tk
 import sys, os, io
 import subprocess
 import ctypes
 import ctypes.wintypes as w
+import traceback
 
 # Ref from: https://stackoverflow.com/questions/
 # 46132401/read-text-from-clipboard-in-windows-using-ctypes
@@ -190,9 +196,70 @@ class Clipper:
             os.mkdir(fl)
         return fl
 
+    def prre(self, pth: str, lock: bool = True) -> None:
+        """MacOS X file protection"""
+
+        v = None
+        pr = None
+        fl = None
+
+        if lock:
+            v = io.StringIO()
+            with redirect_stdout(v):
+                fl = ff(pth)
+                fl.flagger("IMMUTABLE")
+                pr = fpm(pth)
+                pr.changeperm(644)
+                v.flush()
+        else:
+            v = io.StringIO()
+            with redirect_stdout(v):
+                pr = fpm(pth)
+                pr.changeperm(000, True)
+                fl = ff(pth)
+                fl.flagger("IMMUTABLE")
+                v.flush()
+        del pth, v, pr, fl
+
+    def winatt(self, pth: str, lock: bool = True) -> None:
+        """Windows file protection."""
+
+        a = None
+        if lock:
+            a = AttSet(pth)
+            for i in [
+                WinAtt.HIDDEN.att,
+                WinAtt.SYSTEM.att,
+                WinAtt.READONLY.att
+            ]:
+                a.set_file_attrib(i)
+        else:
+            a = AttSet(pth, True)
+            for i in [
+                WinAtt.HIDDEN.att,
+                WinAtt.SYSTEM.att,
+                WinAtt.READONLY.att
+            ]:
+                a.set_file_attrib(i)
+        del a
+    
+    def pltfuse(self, pth: str, lock: bool = True):
+
+        match sys.platform:
+            case plt if plt.startswith("win"):
+                if lock:
+                    self.winatt(pth)
+                else:
+                    self.winatt(pth, False)
+            case _:
+                if lock:
+                    self.prre(pth)
+                else:
+                    self.prre(pth, False)
+
     def varsave(self, nvar: str, st: bool = True):
-        pick = Path(os.path.join(self.fold(), f"clipvars.json"))
-        pth = os.path.join(pick.parent, f"clipvars")
+        pick = Path(os.path.join(self.fold(), f".clipvars.json"))
+        pth = os.path.join(pick.parent, f".clipvars")
         lvar = [f"{nvar}"]
         co = None
 
@@ -201,15 +268,19 @@ class Clipper:
                 if not os.path.exists(pth):
                     deconstruct(f"{lvar}", pick.name, pick.parent)
                     os.rename(pick, pth)
+                    self.pltfuse(pth, False)
                 else:
+                    self.pltfuse(pth)
                     os.rename(pth, pick)
                     co = construct(str(pick))
                     co = literal_eval(co)
                     lvar = lvar + co if not lvar[0] in co else co
                     deconstruct(f"{lvar}", pick.name, pick.parent)
                     os.rename(pick, pth)
+                    self.pltfuse(pth, False)
             case False:
                 if os.path.exists(pth):
+                    self.pltfuse(pth)
                     os.rename(pth, pick)
                     co = construct(str(pick))
                     co = literal_eval(co)
@@ -217,20 +288,23 @@ class Clipper:
                     if co:
                         deconstruct(f"{co}", pick.name, pick.parent)
                         os.rename(pick, pth)
+                        self.pltfuse(pth, False)
                     else:
                         os.remove(pick)
 
         del pick, pth, lvar, co
 
     def rdvars(self) -> list | None:
-        pick = Path(os.path.join(self.fold(), f"clipvars.json"))
-        pth = os.path.join(pick.parent, f"clipvars")
+        pick = Path(os.path.join(self.fold(), f".clipvars.json"))
+        pth = os.path.join(pick.parent, f".clipvars")
         co = None
 
         if os.path.exists(pth):
+            self.pltfuse(pth)
             os.rename(pth, pick)
             co = construct(str(pick))
             os.rename(pick, pth)
+            self.pltfuse(pth, False)
         del pick, pth
 
         if co:
@@ -277,7 +351,7 @@ class Clipper:
                 self.varsave(d.result[1])
                 messagebox.showinfo("Clippers", f"{v.getvalue()[:-1]}")
                 v.flush()
-        del v, take
+        del v, take, data, psd
 
     def gpss(self):
         pssd = simpledialog.askstring(
@@ -370,8 +444,8 @@ class Clipper:
                     self.zipex(name=fln, pssd=pssd, st=False)
                     con = construct(jn)
                     con = "".join(literal_eval(con))
-                    messagebox.showinfo("Clippers", con)
                     os.remove(jn)
+                    messagebox.showinfo("Clippers", con)
                     del con
                 except Exception as e:
                     messagebox.showerror("Clippers", e)
@@ -386,8 +460,8 @@ class Clipper:
                 jn = os.path.join(self.fold(), take)
                 self.zipex(take, psd, False)
                 con = literal_eval(construct(jn))
-                self.sett(con, psd)
                 os.remove(jn)
+                self.sett(con, psd)
                 del jn, con
             except Exception as e:
                 messagebox.showerror("Clippers", e)
@@ -413,18 +487,25 @@ class Clipper:
             return False
 
     def clenvar(self):
+        msg = sys.platform.startswith("win")
         if result := self.chfl(self._retl(z=False)):
             cl = Cleaner()
-            if sys.platform.startswith("win"):
-                cl.wind(result)
-            else:
-                fname = ".zprofile" if self.ckpro() else ".bash_profile"
-                cl.macs(result, fname)
-                del fname
-            del cl
+            v = io.StringIO()
+            with redirect_stdout(v):
+                if msg:
+                    cl.wind(result)
+                else:
+                    fname = ".zprofile" if self.ckpro() else ".bash_profile"
+                    cl.macs(result, fname)
+                    del fname
+                del cl
             self.varsave(result, False)
-            messagebox.showinfo("Clippers", f"Variable {result} has been deleted!")
-        del result
+            msg = (
+                v.getvalue() if msg else f"Var: {result}\nSuccessfully deleted!"
+            )
+            messagebox.showinfo("Clippers", f"{msg}")
+            v.flush()
+        del result, msg
 
 
 def main():
