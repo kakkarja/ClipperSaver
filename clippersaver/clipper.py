@@ -21,15 +21,21 @@ import sys, os, io
 import subprocess
 import ctypes
 import ctypes.wintypes as w
-import traceback
+from excptr import excp, excpcls
 
 # Ref from: https://stackoverflow.com/questions/
 # 46132401/read-text-from-clipboard-in-windows-using-ctypes
 # 53226110/how-to-clear-clipboard-in-using-python/53226144
 
-
+@excpcls(0)
 class Clipper:
+    """
+    Clipper copied string in clipboard and delete it. 
+    The app running background and catch every copied string.
+    The purpose is to set it to env-var or save it in deconstruct format.
+    """
     def __init__(self, root):
+        """Tkinter setup in init for clipper"""
         self.root = root
         self.root.title("Clipper")
         self.root.resizable(False, False)
@@ -80,6 +86,7 @@ class Clipper:
         self.clipon()
 
     def clear(self, event=None):
+        """To delete every selected strings"""
         if self.ls.curselection():
             m = 0
             sem = None
@@ -90,6 +97,7 @@ class Clipper:
             del m, sem
 
     def updatesel(self, event=None):
+        """Keep selected index sequence according to selection"""
         if self.upt:
             if set(self.ls.curselection()) - set(self.upt):
                 x = list(set(self.ls.curselection()) - set(self.upt)).pop()
@@ -105,6 +113,7 @@ class Clipper:
                 self.sel.append(self.upt[0])
 
     def topm(self):
+        """Switch on and off for the app to be top-most"""
         match self.root.wm_attributes("-topmost"):
             case 1:
                 self.root.attributes("-topmost", 0)
@@ -112,6 +121,7 @@ class Clipper:
                 self.root.attributes("-topmost", 1)
 
     def copasw(self) -> str:
+        """Catching copied in Windows platform"""
 
         CF_UNICODETEXT = 13
 
@@ -157,6 +167,7 @@ class Clipper:
         return text
 
     def pbcopas(self) -> str:
+        """Get copied item through platform specific"""
         if sys.platform.startswith("win"):
             gt = self.copasw()
             return gt
@@ -173,6 +184,7 @@ class Clipper:
             return gt
 
     def clipon(self):
+        """Clipper background runner"""
         clip = self.pbcopas()
         match clip:
             case "":
@@ -182,11 +194,13 @@ class Clipper:
                 self.aft = self.root.after(500, self.clipon)
 
     def stc(self):
+        """Stopping background runner"""
         if self.aft:
             self.root.after_cancel(self.aft)
             self.aft = None
 
     def fold(self) -> str:
+        """Folder path creator"""
         fl = (
             os.path.join(os.environ["USERPROFILE"], "ClipperSaver")
             if sys.platform.startswith("win")
@@ -244,6 +258,7 @@ class Clipper:
         del a
     
     def pltfuse(self, pth: str, lock: bool = True):
+        """Platforms switcher for file locking"""
 
         match sys.platform:
             case plt if plt.startswith("win"):
@@ -258,6 +273,7 @@ class Clipper:
                     self.prre(pth, False)
 
     def varsave(self, nvar: str, st: bool = True):
+        """Database record of environment variables created"""
         pick = Path(os.path.join(self.fold(), f".clipvars.json"))
         pth = os.path.join(pick.parent, f".clipvars")
         lvar = [f"{nvar}"]
@@ -295,6 +311,7 @@ class Clipper:
         del pick, pth, lvar, co
 
     def rdvars(self) -> list | None:
+        """Database readers of variables created"""
         pick = Path(os.path.join(self.fold(), f".clipvars.json"))
         pth = os.path.join(pick.parent, f".clipvars")
         co = None
@@ -313,6 +330,7 @@ class Clipper:
             return co
 
     def sett(self, data: str | list, psd: str = None):
+        """Setter for Environment Variable"""
         v = None
         take = None
         if self.lock is None:
@@ -349,11 +367,12 @@ class Clipper:
                 with redirect_stdout(v):
                     cmsk(take, d.result[0], d.result[1])
                 self.varsave(d.result[1])
-                messagebox.showinfo("Clippers", f"{v.getvalue()[:-1]}")
                 v.flush()
+                messagebox.showinfo("Clippers", f"Env-Var: {d.result[1]}\ncreated.")
         del v, take, data, psd
 
     def gpss(self):
+        """Password request"""
         pssd = simpledialog.askstring(
             "Clippers", "Password:", parent=self.root, show="-"
         )
@@ -361,6 +380,7 @@ class Clipper:
             return pssd
 
     def zipex(self, name: str, pssd: str, st: bool = True):
+        """7z-zipper creator"""
         ori = os.getcwd()
         os.chdir(self.fold())
         if st:
@@ -372,6 +392,7 @@ class Clipper:
             os.chdir(ori)
 
     def struc(self):
+        """Structure the selection to setter or deconstruct"""
         coll = []
         if self.sel:
             ask = messagebox.askyesno(
@@ -401,6 +422,7 @@ class Clipper:
         del coll
 
     def chfl(self, group: list):
+        """List to choose creator"""
         fl = group
         if fl and self.lock is None:
             self.lock = 1
@@ -429,45 +451,43 @@ class Clipper:
                 return d.result
 
     def _retl(self, z: bool = True):
+        """Zipper list or Vars list"""
         if z:
             return [i for i in os.listdir(self.fold()) if ".7z" in i]
         else:
             return self.rdvars()
 
     def readec(self):
+        """Deconstruct file reader"""
         if take := self.chfl(self._retl()):
             fld = self.fold()
             fln = take.rpartition(".")[0] + ".json"
             jn = os.path.join(fld, fln)
             if pssd := self.gpss():
-                try:
-                    self.zipex(name=fln, pssd=pssd, st=False)
-                    con = construct(jn)
-                    con = "".join(literal_eval(con))
-                    os.remove(jn)
-                    messagebox.showinfo("Clippers", con)
-                    del con
-                except Exception as e:
-                    messagebox.showerror("Clippers", e)
+                self.zipex(name=fln, pssd=pssd, st=False)
+                con = construct(jn)
+                con = "".join(literal_eval(con))
+                os.remove(jn)
+                messagebox.showinfo("Clippers", con)
+                del con
             del fld, fln, jn, pssd, take
 
     def setdec(self):
+        """Deconstruct setter"""
         take = self.chfl(self._retl())
         psd = self.gpss() if take else None
         if take and psd:
-            try:
-                take = take.rpartition(".")[0] + ".json"
-                jn = os.path.join(self.fold(), take)
-                self.zipex(take, psd, False)
-                con = literal_eval(construct(jn))
-                os.remove(jn)
-                self.sett(con, psd)
-                del jn, con
-            except Exception as e:
-                messagebox.showerror("Clippers", e)
+            take = take.rpartition(".")[0] + ".json"
+            jn = os.path.join(self.fold(), take)
+            self.zipex(take, psd, False)
+            con = literal_eval(construct(jn))
+            os.remove(jn)
+            self.sett(con, psd)
+            del jn, con
         del take, psd
 
     def deldec(self):
+        """Delete a 7z file"""
         if gt := self.chfl(self._retl()):
             if os.path.exists(pth := os.path.join(self.fold(), gt)):
                 os.remove(pth)
@@ -476,6 +496,7 @@ class Clipper:
         del gt
 
     def ckpro(self):
+        """Platform MacOS X checker for bash or zsh"""
         pth = [i for i in os.listdir(os.environ["HOME"]) if ".z" in i]
         if pth:
             for fi in pth:
@@ -487,6 +508,7 @@ class Clipper:
             return False
 
     def clenvar(self):
+        """Environment Variable deleter according to a platform"""
         msg = sys.platform.startswith("win")
         if result := self.chfl(self._retl(z=False)):
             cl = Cleaner()
@@ -509,12 +531,15 @@ class Clipper:
 
 
 def main():
+    """Clipper starter"""
     root = Tk()
     start = Clipper(root)
     start.root.mainloop()
 
 
+@excp(0)
 def zippy(name: str, pssd: str, st: bool = True):
+    """7z-zipper utility"""
     if st:
         if os.path.isfile(name):
             arc = Ziper(name)
