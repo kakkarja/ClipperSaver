@@ -14,20 +14,20 @@ from pathlib import Path
 from filepmon.pgf import FilePermission as fpm
 from filfla.ffl import FilFla as ff
 from filatt.filatt import WinAtt, AttSet
-from functools import wraps
-from typing import Any
+from excptr import excp, excpcls, defd, DEFAULTDIR, DEFAULTFILE
 import tkinter as tk
 import sys, os, io
 import subprocess
 import ctypes
 import ctypes.wintypes as w
-from excptr import excp, excpcls
+
 
 # Ref from: https://stackoverflow.com/questions/
 # 46132401/read-text-from-clipboard-in-windows-using-ctypes
 # 53226110/how-to-clear-clipboard-in-using-python/53226144
 
-@excpcls(0)
+    
+@excpcls(2, DEFAULTFILE)
 class Clipper:
     """
     Clipper copied string in clipboard and delete it. 
@@ -555,12 +555,14 @@ class Clipper:
 def main():
     """Clipper starter"""
 
+    if not os.path.exists(DEFAULTDIR):
+        defd()
     root = Tk()
     start = Clipper(root)
     start.root.mainloop()
 
 
-@excp(0)
+@excp(2, DEFAULTFILE)
 def zippy(name: str, pssd: str, st: bool = True):
     """7z-zipper utility"""
 

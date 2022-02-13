@@ -48,6 +48,9 @@ clippers
 - Easily useful to set in Environment Variable which data is encrypted.
     - These will be useful for developer.
 - Add deleting selected cells with keyboard shortcut **"Control+d"**.
+- Using decorators from https://pypi.org/project/excptr-karjakak for exception tracing to log file.
+    - In case any unusual behaviour, check the log file in "**EXCPTR**" folder in user-path directory.
+        - Please create issue with the copy of the log file.
 ## Visit for usage Reference
 - https://pypi.org/project/Clien-karjakak/
 - https://pypi.org/project/DecAn-karjakak/
